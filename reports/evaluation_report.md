@@ -1,6 +1,6 @@
 # Model Evaluation Report
 
-Generated: 2026-10-12 04:40 UTC  
+Generated: 2026-10-12 08:38 UTC  
 Data status: **SYNTHETIC DEMO DATA — NOT REAL TRADING RESULTS**
 
 ## Dataset and validation
@@ -10,15 +10,15 @@ Data status: **SYNTHETIC DEMO DATA — NOT REAL TRADING RESULTS**
 - Demo target: synthetic and illustrative
 
 ## Predictive metrics
-- MAE: 0.0250
-- RMSE: 0.0324
-- R-squared: 0.6015
+- MAE: 0.0255
+- RMSE: 0.0317
+- R-squared: 0.6268
 
 ## Trading risk metrics
 - Return observations: 120
-- Sharpe ratio: 1.0774
-- Sortino ratio: 1.5956
-- Maximum drawdown: -0.3817
+- Sharpe ratio: 0.3571
+- Sortino ratio: 0.5075
+- Maximum drawdown: -0.4261
 
 ## Limitations
 Synthetic data only: metrics test software execution, not real forecasting skill or trading profitability.
