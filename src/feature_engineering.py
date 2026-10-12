@@ -4,44 +4,73 @@ import pandas as pd
 from src.sentiment_analysis import add_sentiment
 
 
+# Use a cutoff before the US stock market closes.
+MARKET_TIMEZONE = "America/New_York"
+PREDICTION_CUTOFF = "15:45"
+
+
+def _prepare_timestamps(df, column):
+    """Convert a timestamp column to UTC-aware datetimes."""
+    df[column] = pd.to_datetime(
+        df[column],
+        utc=True,
+        errors="coerce",
+    )
+    return df
+
+
+def _prepare_daily_features(df, timestamp_column):
+    """
+    Assign records to US Eastern calendar dates.
+
+    Records after the prediction cutoff are excluded.
+    Output dates are represented as UTC midnight so that
+    existing date-based dataset alignment remains compatible.
+    """
+    df = _prepare_timestamps(df, timestamp_column)
+    df = df.dropna(subset=[timestamp_column]).copy()
+
+    eastern = df[timestamp_column].dt.tz_convert(
+        MARKET_TIMEZONE
+    )
+
+    df["_session_date"] = eastern.dt.strftime("%Y-%m-%d")
+    df["_local_time"] = eastern.dt.strftime("%H:%M")
+
+    # Retain information available by the prediction cutoff.
+    df = df[
+        df["_local_time"] <= PREDICTION_CUTOFF
+    ].copy()
+
+    return df
+
+
 def build_daily_features(news, events):
     """
-    Build daily features from economic news and calendar events.
+    Build daily economic-news and calendar features.
 
-    Features:
-    - Daily news count and sentiment statistics
-    - Daily economic event counts
-    - Mean economic event surprise
-    - High-impact event counts
-    - Rolling sentiment features
+    Information published or occurring after 15:45 US Eastern
+    time is excluded from that day's feature calculations.
 
-    Important:
-    Economic surprises are calculated for descriptive analysis.
-    Their availability at the prediction cutoff must be verified
-    before using them in a trading model.
-
-    News and events are grouped by UTC calendar date. This alone
-    does not guarantee that all information was available before
-    a particular market prediction cutoff.
+    Economic surprises are retained for descriptive analysis
+    only. Their release availability is not independently
+    verified, and they are not model input features.
     """
 
     # --------------------------------------------------
-    # 1. Process news data
+    # 1. Process news
     # --------------------------------------------------
     if news is not None and not news.empty:
         n = add_sentiment(news.copy())
 
-        n["published_at"] = pd.to_datetime(
-            n["published_at"],
-            utc=True,
-            errors="coerce",
+        n = _prepare_daily_features(
+            n,
+            "published_at",
         )
 
-        n["date"] = n["published_at"].dt.floor("D")
+        n = n.dropna(subset=["sentiment"])
 
-        n = n.dropna(subset=["date", "sentiment"])
-
-        dn = n.groupby("date").agg(
+        dn = n.groupby("_session_date").agg(
             news_count=("sentiment", "size"),
             sentiment_mean=("sentiment", "mean"),
             sentiment_std=("sentiment", "std"),
@@ -54,6 +83,12 @@ def build_daily_features(news, events):
                 lambda x: float((x < 0).mean()),
             ),
         )
+
+        dn.index = pd.to_datetime(
+            dn.index,
+            utc=True,
+        )
+        dn.index.name = "date"
 
     else:
         dn = pd.DataFrame(
@@ -72,36 +107,28 @@ def build_daily_features(news, events):
         )
 
     # --------------------------------------------------
-    # 2. Process economic calendar events
+    # 2. Process economic events
     # --------------------------------------------------
     if events is not None and not events.empty:
         e = events.copy()
 
-        e["event_time"] = pd.to_datetime(
-            e["event_time"],
-            utc=True,
-            errors="coerce",
+        e = _prepare_daily_features(
+            e,
+            "event_time",
         )
 
-        e = e.dropna(subset=["event_time"])
-
-        e["date"] = e["event_time"].dt.floor("D")
-
-        # Ensure required columns exist.
         if "event_name" not in e.columns:
             e["event_name"] = ""
 
         if "importance" not in e.columns:
             e["importance"] = ""
 
-        # Ensure actual and forecast columns exist.
         if "actual" not in e.columns:
             e["actual"] = np.nan
 
         if "forecast" not in e.columns:
             e["forecast"] = np.nan
 
-        # Convert actual and forecast to numeric values.
         e["actual"] = pd.to_numeric(
             e["actual"],
             errors="coerce",
@@ -112,14 +139,11 @@ def build_daily_features(news, events):
             errors="coerce",
         )
 
-        # Calculate the economic surprise.
-        # Missing or non-numeric values remain NaN.
         e["actual_minus_forecast"] = (
             e["actual"] - e["forecast"]
         )
 
-        # Aggregate event statistics by UTC date.
-        de = e.groupby("date").agg(
+        de = e.groupby("_session_date").agg(
             event_count=("event_name", "size"),
             event_surprise_mean=(
                 "actual_minus_forecast",
@@ -139,6 +163,12 @@ def build_daily_features(news, events):
             ),
         )
 
+        de.index = pd.to_datetime(
+            de.index,
+            utc=True,
+        )
+        de.index.name = "date"
+
     else:
         de = pd.DataFrame(
             columns=[
@@ -154,19 +184,16 @@ def build_daily_features(news, events):
         )
 
     # --------------------------------------------------
-    # 3. Combine news and event data
+    # 3. Combine daily features
     # --------------------------------------------------
     dates = list(dn.index) + list(de.index)
 
     if not dates:
         return pd.DataFrame()
 
-    start_date = min(dates)
-    end_date = max(dates)
-
     idx = pd.date_range(
-        start=start_date,
-        end=end_date,
+        start=min(dates),
+        end=max(dates),
         freq="D",
         tz="UTC",
         name="date",
@@ -175,7 +202,7 @@ def build_daily_features(news, events):
     out = dn.join(de, how="outer").reindex(idx)
 
     # --------------------------------------------------
-    # 4. Handle missing event and news counts
+    # 4. Fill count columns
     # --------------------------------------------------
     count_columns = [
         "news_count",
@@ -191,10 +218,8 @@ def build_daily_features(news, events):
         )
 
     # --------------------------------------------------
-    # 5. Handle missing sentiment
+    # 5. Fill missing sentiment statistics
     # --------------------------------------------------
-    # Zero is a modeling convention for missing sentiment.
-    # It does not prove that sentiment was actually neutral.
     sentiment_columns = [
         "sentiment_mean",
         "sentiment_std",
@@ -205,28 +230,21 @@ def build_daily_features(news, events):
     for column in sentiment_columns:
         out[column] = out[column].fillna(0.0)
 
-    # IMPORTANT:
-    # Do not fill missing event surprises with zero.
-    # A missing surprise does not mean there was no surprise.
+    # Do not replace missing event surprises with zero.
+    # Missing data does not mean the surprise was zero.
 
     # --------------------------------------------------
-    # 6. Create rolling sentiment features
+    # 6. Calculate rolling features
     # --------------------------------------------------
     out["sentiment_3d_mean"] = (
         out["sentiment_mean"]
-        .rolling(
-            window=3,
-            min_periods=1,
-        )
+        .rolling(window=3, min_periods=1)
         .mean()
     )
 
     out["sentiment_7d_mean"] = (
         out["sentiment_mean"]
-        .rolling(
-            window=7,
-            min_periods=1,
-        )
+        .rolling(window=7, min_periods=1)
         .mean()
     )
 
@@ -238,20 +256,16 @@ def build_daily_features(news, events):
 
     out["news_count_7d"] = (
         out["news_count"]
-        .rolling(
-            window=7,
-            min_periods=1,
-        )
+        .rolling(window=7, min_periods=1)
         .sum()
     )
 
     # --------------------------------------------------
-    # 7. Final data cleanup
+    # 7. Final cleanup
     # --------------------------------------------------
     out = out.replace(
         [np.inf, -np.inf],
         np.nan,
     )
 
-    # Return date as a regular column.
     return out.reset_index()

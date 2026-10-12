@@ -84,7 +84,7 @@ def create_joined_dataset(connection):
 
 
 def verify_database(connection):
-    """Display the available database tables and row counts."""
+    """Display database tables and their row counts."""
 
     cursor = connection.cursor()
 
@@ -109,10 +109,11 @@ def verify_database(connection):
 
 
 def main():
-    """Import source datasets and create the joined macro dataset."""
+    """Import source datasets and create the joined dataset."""
 
     DATA_DIR.mkdir(parents=True, exist_ok=True)
 
+    # CSV sources imported into SQLite.
     sources = {
         "economic_calendar": (
             DATA_DIR / "raw" / "economic_calendar.csv"
@@ -122,6 +123,9 @@ def main():
         ),
         "economic_news": (
             DATA_DIR / "raw" / "tavily_economic_news.csv"
+        ),
+        "market_prices": (
+            DATA_DIR / "raw" / "market_prices.csv"
         ),
         "daily_features": (
             DATA_DIR / "processed" / "daily_features.csv"
@@ -136,7 +140,7 @@ def main():
 
     with sqlite3.connect(DB_PATH) as connection:
 
-        # Step 1: Import the CSV datasets.
+        # Step 1: Import all available CSV datasets.
         for table_name, csv_path in sources.items():
             import_csv(
                 connection,
@@ -144,10 +148,10 @@ def main():
                 table_name,
             )
 
-        # Step 2: Join daily news and macro features.
+        # Step 2: Create the combined macro dataset.
         create_joined_dataset(connection)
 
-        # Step 3: Verify database tables and row counts.
+        # Step 3: Verify all tables.
         verify_database(connection)
 
     print(f"\nSQLite database saved to:\n{DB_PATH}")
