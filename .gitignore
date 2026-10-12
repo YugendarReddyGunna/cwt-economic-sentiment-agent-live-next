@@ -13,3 +13,5 @@ artifacts/*
 .DS_Store
 
 data/macro_economics.db
+
+data/macro_economics.db
