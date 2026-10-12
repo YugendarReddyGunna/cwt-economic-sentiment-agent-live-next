@@ -11,3 +11,5 @@ artifacts/*
 !artifacts/.gitkeep
 .ipynb_checkpoints/
 .DS_Store
+
+data/macro_economics.db
