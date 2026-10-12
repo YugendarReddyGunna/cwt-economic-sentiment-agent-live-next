@@ -2,18 +2,18 @@
 
 ## Dataset
 - Input: `data/processed/aligned_model_dataset.csv`
-- Total aligned observations: 123
-- Out-of-sample predictions: 63
-- First test date: 2026-07-13
-- Last test date: 2026-10-08
+- Total aligned observations: 122
+- Out-of-sample predictions: 62
+- First test date: 2026-07-15
+- Last test date: 2026-10-09
 - Target: next-observation S&P 500 index return
 
 ## Predictive metrics
 
 | Metric | Random Forest | Mean-return baseline |
 |---|---:|---:|
-| MAE | 0.00551213 | 0.00561917 |
-| RMSE | 0.00685281 | 0.00690337 |
+| MAE | 0.00579552 | 0.00562002 |
+| RMSE | 0.00737351 | 0.00693712 |
 
 ## Limitations
 - This is a small historical sample.
