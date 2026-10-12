@@ -51,6 +51,7 @@ def clean_news(news):
     )
 
     df = df.dropna(subset=["published_at"])
+
     df = df[
         (df["title"] != "")
         | (df["content"] != "")
@@ -78,13 +79,14 @@ def clean_events(events):
         if column not in df.columns:
             df[column] = False if column == "is_synthetic" else ""
 
+    # Normalize timestamps to UTC.
     df["event_time"] = pd.to_datetime(
         df["event_time"],
         errors="coerce",
         utc=True,
     )
 
-    # Preserve the original values for auditing.
+    # Preserve original values for auditing.
     df["actual_raw"] = df["actual"]
     df["forecast_raw"] = df["forecast"]
 
@@ -99,6 +101,7 @@ def clean_events(events):
         errors="coerce",
     )
 
+    # Normalize text columns.
     for column in ["event_name", "importance", "source"]:
         df[column] = (
             df[column]
@@ -107,21 +110,32 @@ def clean_events(events):
             .str.strip()
         )
 
+    # Restore missing source labels for original calendar records.
+    # Existing APIFY labels remain unchanged.
+    df.loc[
+        df["source"] == "",
+        "source",
+    ] = "FINANCE_CALENDAR"
+
     df["is_synthetic"] = (
         df["is_synthetic"]
         .fillna(False)
         .astype(bool)
     )
 
+    # Remove only records with invalid timestamps or missing names.
     df = df.dropna(subset=["event_time"])
-
     df = df[df["event_name"] != ""]
 
+    # Deduplicate within each source. Identical events from different
+    # sources are retained so source coverage is not silently lost.
     df = df.drop_duplicates(
-        subset=["event_time", "event_name"]
-    ).sort_values("event_time")
+        subset=["event_time", "event_name", "source"]
+    )
 
-    # Calculate surprises only when actual and forecast are numeric.
+    df = df.sort_values("event_time")
+
+    # Calculate surprises only when both values are numeric.
     df["actual_minus_forecast"] = (
         df["actual"] - df["forecast"]
     )
