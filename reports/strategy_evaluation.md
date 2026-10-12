@@ -3,7 +3,7 @@
 ## Evaluation Setup
 
 - Underlying: S&P 500 index
-- Out-of-sample observations: 54
+- Out-of-sample observations: 63
 - Evaluation: Walk-forward predictions
 - Transaction costs and slippage: Not included
 - Position size: One unit per active session
@@ -12,10 +12,10 @@
 
 ```text
                  strategy  total_sessions  active_sessions  win_rate  mean_active_return  cumulative_return  sharpe_ratio  sortino_ratio  max_drawdown  transaction_costs_included
-                Long-only              54               30  0.633333            0.003429           0.107232      5.111437      11.501655     -0.015161                       False
-               Long-short              54               54  0.685185            0.002814           0.162620      6.983643      14.753347     -0.015161                       False
- Threshold-0.2%-long-only              54               25  0.600000            0.003483           0.090190      5.180221      15.698769     -0.013735                       False
-Threshold-0.2%-long-short              54               33  0.575758            0.002359           0.080128      4.386533      11.162380     -0.013735                       False
+                Long-only              63               33  0.545455            0.002732           0.093260      4.143312      10.142833     -0.017051                       False
+               Long-short              63               63  0.587302            0.002225           0.148758      5.380087      11.989727     -0.025757                       False
+ Threshold-0.2%-long-only              63               23  0.565217            0.002745           0.064443      3.431424       8.055126     -0.015148                       False
+Threshold-0.2%-long-short              63               28  0.535714            0.001711           0.048288      2.467897       5.002714     -0.023871                       False
 ```
 
 ## Metric Definitions

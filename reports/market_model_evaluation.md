@@ -2,9 +2,9 @@
 
 ## Dataset
 - Input: `data/processed/aligned_model_dataset.csv`
-- Total aligned observations: 114
-- Out-of-sample predictions: 54
-- First test date: 2026-07-24
+- Total aligned observations: 123
+- Out-of-sample predictions: 63
+- First test date: 2026-07-13
 - Last test date: 2026-10-08
 - Target: next-observation S&P 500 index return
 
@@ -12,13 +12,14 @@
 
 | Metric | Random Forest | Mean-return baseline |
 |---|---:|---:|
-| MAE | 0.00533540 | 0.00563526 |
-| RMSE | 0.00659327 | 0.00691073 |
+| MAE | 0.00551213 | 0.00561917 |
+| RMSE | 0.00685281 | 0.00690337 |
 
 ## Limitations
 - This is a small historical sample.
 - The evaluation target is an index return, not strategy P&L.
-- The event-surprise feature was excluded because all its values are missing.
+- The event-surprise feature was excluded from the model because its
+  availability and release-time alignment have not been verified.
 - Features must be checked for publication-time alignment before results are
   interpreted as a valid real-time forecast.
 - Transaction costs, slippage, and executable trading rules have not been

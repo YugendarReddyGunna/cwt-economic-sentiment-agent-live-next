@@ -122,7 +122,8 @@ def main():
 ## Limitations
 - This is a small historical sample.
 - The evaluation target is an index return, not strategy P&L.
-- The event-surprise feature was excluded because all its values are missing.
+- The event-surprise feature was excluded from the model because its
+  availability and release-time alignment have not been verified.
 - Features must be checked for publication-time alignment before results are
   interpreted as a valid real-time forecast.
 - Transaction costs, slippage, and executable trading rules have not been
