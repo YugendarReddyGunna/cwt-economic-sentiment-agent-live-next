@@ -1,6 +1,6 @@
 # Model Evaluation Report
 
-Generated: 2026-10-12 12:52 UTC  
+Generated: 2026-10-12 14:15 UTC
 Data status: **SYNTHETIC DEMO DATA — NOT REAL TRADING RESULTS**
 
 ## Dataset and validation
